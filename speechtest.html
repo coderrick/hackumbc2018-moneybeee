@@ -1,0 +1,120 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hold 'Q' to begin speech recognition</title>
+  <style>
+    body {
+      font-family: monospace;
+      font-size: 22px;
+      background-color: whitesmoke;
+      -webkit-transition: background-color 400ms ease;
+      transition: background-color 400ms ease;
+    }
+    main {
+      background-color: rgba(91, 154, 236, 0.4);
+      padding: 20px;
+      display: inline-block;
+    }
+  </style>
+</head>
+  <body>
+    <main>
+      <span id="speech"></span>
+      <span id="interim"></span>
+    </main>
+  </body>
+  <script>
+    //Best used on Chrome
+    function upgrade() {
+      alert('Please upgrade to Google Chrome for best possible experience.');
+    }
+    window.onload = function() {
+      if (!(window.webkitSpeechRecognition) && !(window.speechRecognition)) {
+        upgrade();
+      } else {
+
+        //Initializes Speech Recognition
+      var speech = new webkitSpeechRecognition() || speechRecognition();
+        //Important Variables(?)
+        speech.lang = 'en-US';
+        speech.continuous = true;
+        speech.interimResults = true;
+        var recognizing,
+            final_transcript,
+            interim_transcript,
+            transcription = document.getElementById('speech'),
+            interim_span = document.getElementById('interim');
+        interim_span.style.opacity = '0.5';
+        //Restarts the array
+        function reset() {
+          transcription.innerHTML = '';
+          interim_span.innerHTML = '';
+          recognizing = false;
+        }
+        //Press button to start recording & adding to array
+        document.onkeydown = function(e) {
+          if (e.key === "t") {
+            if (!recognizing) {
+              speech.start();
+            }
+          }
+        };
+        //When button is released, the mic stops recording & stops adding to array
+        document.onkeyup = function(e) {
+          if (e.key === "t") {
+            if (recognizing) {
+              speech.stop();
+              reset();
+            }
+          }
+        };
+        speech.onstart = function() {
+            // When recognition begins
+            recognizing = true;
+            console.log("Speaking!");
+        };
+        
+        speech.onresult = function(event) {
+            // When recognition produces result
+            interim_transcript = '';
+            final_transcript = '';
+            // main for loop for final and interim results
+            for (var i = event.resultIndex; i < event.results.length; ++i) {
+              if (event.results[i].isFinal) {
+                final_transcript += event.results[i][0].transcript;
+              } else {
+                interim_transcript += event.results[i][0].transcript;
+              }
+            }
+            transcription.innerHTML = final_transcript;
+            interim_span.innerHTML = interim_transcript;
+            //Array for what the user talks about
+            var makeArray = final_transcript.split(' ');
+            //Records last 3 words
+            var bColor = makeArray.splice(-3);
+            // change background color
+            //This works by taking in the last few words of the array, and doing different things according to the pattern of the last words
+            if ((/^change /g.test(final_transcript)) && (/background color/g.test(final_transcript))) {
+              //EX: "Change background color to red" only "color to red" is relevant, rest is useless mostly
+              if (bColor[0] === 'to') {
+                document.body.style.backgroundColor = bColor[1] + bColor[2];
+              } else if (bColor[1] === 'to') {
+                document.body.style.backgroundColor = bColor[2];
+              } else {
+                document.body.style.backgroundColor = bColor[0] + bColor[1] + bColor[2];
+              }
+            }
+        };
+        speech.onerror = function(event) {
+            // When recognition fails or error occurs
+            console.error(event.error); 
+        };
+        speech.onend = function() {
+            // When recognition ends
+            console.log("Hold 'Q' to begin speech.");
+            reset();
+        };
+      }
+    };
+  </script>
+</html>
